@@ -1,21 +1,34 @@
 import React, { useState } from "react";
 import Message from "./Message";
+import axios from "axios";
 
 const ChatWindow = () => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (inputValue.trim()) {
       setMessages([...messages, { sender: "user", text: inputValue }]);
       setInputValue("");
 
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          { sender: "bot", text: `You said: ${inputValue}` },
+      try {
+        // Send the message to the backend
+        const response = await axios.post('http://localhost:5000/api/message', {
+          message: inputValue,
+        });
+
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { sender: 'bot', text: response.data.message }
         ]);
-      }, 1000);
+      } catch (error) {
+        console.error('Error sending message to backend:', error);
+
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { sender: 'bot', text: 'Error: Unable to connect to the server.' }
+        ]);
+      }
     }
   };
 
@@ -31,6 +44,9 @@ const ChatWindow = () => {
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         placeholder="Type your message..."
+        onKeyUp={(e) => {
+          if (e.key === 'Enter') sendMessage();
+        }}
       />
       <button onClick={sendMessage}>Send</button>
     </div>
